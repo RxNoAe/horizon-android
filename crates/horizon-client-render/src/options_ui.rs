@@ -196,6 +196,15 @@ impl Opt {
             Opt::TouchAttackButtonLook => "Look while attacking",
             Opt::TouchMouseSensitivity => "Virtual mouse sensitivity",
             Opt::TouchVirtualMouse => "Virtual mouse (keyboard & mouse)",
+            Opt::TouchVirtualMouseSize => "Virtual mouse size",
+            Opt::TouchVirtualMouseHide => "Hide virtual mouse (click mode)",
+            Opt::TouchVirtualMouseSystem => "Use system mouse pointer",
+            Opt::TouchVirtualMouseControl => "Virtual mouse control",
+            Opt::TouchVirtualMouseClick => "Virtual mouse click",
+            Opt::TouchVirtualMouseBlock => "Block half-screen touches",
+            Opt::TouchVirtualMouseLongPress => "Right-click hold",
+            Opt::TouchVirtualMouseHotspotX => "Cursor hotspot X",
+            Opt::TouchVirtualMouseHotspotY => "Cursor hotspot Y",
             Opt::TouchAnalog => "360-degree movement",
             Opt::TouchCircleSize => "Touch circle size",
             Opt::TouchAttackSide => "Attack indicator side",
@@ -364,6 +373,10 @@ impl Opt {
             Opt::TouchSensitivityHorizontal => unit(s.touch.sensitivity_horizontal, 0.1, 3.0),
             Opt::TouchSensitivityVertical => unit(s.touch.sensitivity_vertical, 0.1, 3.0),
             Opt::TouchMouseSensitivity => unit(s.touch.virtual_mouse_sensitivity, 0.25, 3.0),
+            Opt::TouchVirtualMouseSize => unit(s.touch.virtual_mouse_size, 5.0, 50.0),
+            Opt::TouchVirtualMouseLongPress => unit(s.touch.virtual_mouse_long_press, 100.0, 1000.0),
+            Opt::TouchVirtualMouseHotspotX => unit(s.touch.virtual_mouse_hotspot[0], 0.0, 1.0),
+            Opt::TouchVirtualMouseHotspotY => unit(s.touch.virtual_mouse_hotspot[1], 0.0, 1.0),
             Opt::TouchButtonScale => unit(s.touch.button_scale, 0.5, 2.0),
             Opt::Fov => unit(s.fov, 30.0, 110.0),
             Opt::RenderDistance => unit(
@@ -561,6 +574,43 @@ impl Opt {
             }
             Opt::TouchVirtualMouse => {
                 Some(if s.touch.virtual_mouse { "ON" } else { "OFF" }.into())
+            }
+            Opt::TouchVirtualMouseSize => Some(format!("{:.0} px", s.touch.virtual_mouse_size)),
+            Opt::TouchVirtualMouseHide => {
+                Some(if s.touch.virtual_mouse_hide { "ON" } else { "OFF" }.into())
+            }
+            Opt::TouchVirtualMouseSystem => Some(
+                if s.touch.virtual_mouse_system {
+                    "System"
+                } else {
+                    "Virtual"
+                }
+                .into(),
+            ),
+            Opt::TouchVirtualMouseControl => Some(
+                if s.touch.virtual_mouse_control == 1 {
+                    "Click"
+                } else {
+                    "Slide"
+                }
+                .into(),
+            ),
+            Opt::TouchVirtualMouseClick => {
+                Some(if s.touch.virtual_mouse_click { "ON" } else { "OFF" }.into())
+            }
+            Opt::TouchVirtualMouseBlock => Some(
+                ["Off", "Left half", "Right half"]
+                    [usize::from(s.touch.virtual_mouse_block.min(2))]
+                .into(),
+            ),
+            Opt::TouchVirtualMouseLongPress => {
+                Some(format!("{:.0} ms", s.touch.virtual_mouse_long_press))
+            }
+            Opt::TouchVirtualMouseHotspotX => {
+                Some(format!("{:.0}%", s.touch.virtual_mouse_hotspot[0] * 100.0))
+            }
+            Opt::TouchVirtualMouseHotspotY => {
+                Some(format!("{:.0}%", s.touch.virtual_mouse_hotspot[1] * 100.0))
             }
             Opt::TouchAttackButtonLook => Some(
                 if s.touch.attack_button_look {
@@ -1005,6 +1055,12 @@ impl Opt {
             Opt::TouchSensitivityHorizontal => s.touch.sensitivity_horizontal = 0.1 + v * 2.9,
             Opt::TouchSensitivityVertical => s.touch.sensitivity_vertical = 0.1 + v * 2.9,
             Opt::TouchMouseSensitivity => s.touch.virtual_mouse_sensitivity = 0.25 + v * 2.75,
+            Opt::TouchVirtualMouseSize => s.touch.virtual_mouse_size = 5.0 + v * 45.0,
+            Opt::TouchVirtualMouseLongPress => {
+                s.touch.virtual_mouse_long_press = 100.0 + v * 900.0
+            }
+            Opt::TouchVirtualMouseHotspotX => s.touch.virtual_mouse_hotspot[0] = v,
+            Opt::TouchVirtualMouseHotspotY => s.touch.virtual_mouse_hotspot[1] = v,
             Opt::TouchButtonScale => s.touch.button_scale = 0.5 + v * 1.5,
             Opt::FovEffects | Opt::DarknessPulsing => s.file.set(
                 self.file_key().unwrap(),
@@ -1129,6 +1185,15 @@ impl Opt {
             Opt::TouchSprintToggle => s.touch.sprint_toggle ^= true,
             Opt::TouchInventoryControls => s.touch.inventory_controls ^= true,
             Opt::TouchVirtualMouse => s.touch.virtual_mouse ^= true,
+            Opt::TouchVirtualMouseHide => s.touch.virtual_mouse_hide ^= true,
+            Opt::TouchVirtualMouseSystem => s.touch.virtual_mouse_system ^= true,
+            Opt::TouchVirtualMouseControl => {
+                s.touch.virtual_mouse_control = (s.touch.virtual_mouse_control + 1) % 2
+            }
+            Opt::TouchVirtualMouseClick => s.touch.virtual_mouse_click ^= true,
+            Opt::TouchVirtualMouseBlock => {
+                s.touch.virtual_mouse_block = (s.touch.virtual_mouse_block + 1) % 3
+            }
             Opt::TouchDynamicJoystick => s.touch.dynamic_joystick ^= true,
             Opt::TouchCrosshairGestures => s.touch.crosshair_gestures ^= true,
             Opt::TouchAttackButtonLook => s.touch.attack_button_look ^= true,
@@ -2794,6 +2859,15 @@ impl OptionsUi {
                     Opt::TouchInventoryControls,
                     Opt::TouchInteract,
                     Opt::TouchVirtualMouse,
+                    Opt::TouchVirtualMouseSize,
+                    Opt::TouchVirtualMouseSystem,
+                    Opt::TouchVirtualMouseHide,
+                    Opt::TouchVirtualMouseControl,
+                    Opt::TouchVirtualMouseClick,
+                    Opt::TouchVirtualMouseBlock,
+                    Opt::TouchVirtualMouseLongPress,
+                    Opt::TouchVirtualMouseHotspotX,
+                    Opt::TouchVirtualMouseHotspotY,
                     Opt::TouchMouseSensitivity,
                     Opt::TouchDynamicJoystick,
                     Opt::TouchDynamicAreaX,

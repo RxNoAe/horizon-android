@@ -604,13 +604,22 @@ impl Game<'_> {
         events: &dyn super::event_loop::EventLoopCtl,
         id: WindowId,
     ) {
-        if self.pad.touch_ui.virtual_mouse {
-            self.android_virtual_touch(t, events, id);
-            return;
-        }
         let Some(b) = self.gui_scale() else {
             return;
         };
+        if self.pad.touch_ui.virtual_mouse {
+            let blocked = t.phase == TouchPhase::Started
+                && self.settings.touch.virtual_mouse_control == 1
+                && match self.settings.touch.virtual_mouse_block {
+                    1 => t.location.x < f64::from(b.width) * f64::from(b.scale) / 2.0,
+                    2 => t.location.x >= f64::from(b.width) * f64::from(b.scale) / 2.0,
+                    _ => false,
+                };
+            if !blocked {
+                self.android_virtual_touch(t, events, id);
+            }
+            return;
+        }
         let p = [t.location.x as f32 / b.scale, t.location.y as f32 / b.scale];
         if t.phase == TouchPhase::Started && self.screen == Screen::Options {
             self.ui.options.touch_start();
@@ -690,6 +699,9 @@ impl Game<'_> {
         let Some(b) = self.gui_scale() else {
             return;
         };
+        self.pad.touch_ui.follow_pointer = self.settings.touch.virtual_mouse_control == 1;
+        self.pad.touch_ui.long_press_ms =
+            self.settings.touch.virtual_mouse_long_press.round() as u64;
         let position = self.pad.touch_ui.relative_touch(
             t.id,
             [t.location.x as f32 / b.scale, t.location.y as f32 / b.scale],
@@ -697,7 +709,7 @@ impl Game<'_> {
             [self.cursor.0, self.cursor.1],
             [b.width, b.height],
             self.settings.touch.virtual_mouse_sensitivity,
-            !self.pad.touch_ui.mouse_held(),
+            self.settings.touch.virtual_mouse_click && !self.pad.touch_ui.mouse_held(),
         );
         self.handle_window_event(
             events,
@@ -726,7 +738,11 @@ impl Game<'_> {
             }
             return;
         }
-        let Some(right) = self.pad.touch_ui.relative_click(true) else {
+        self.pad.touch_ui.long_press_ms =
+            self.settings.touch.virtual_mouse_long_press.round() as u64;
+        let Some(right) = self.pad.touch_ui.relative_click(
+            self.settings.touch.virtual_mouse_click,
+        ) else {
             return;
         };
         let button = if right {
@@ -762,6 +778,7 @@ impl Game<'_> {
     pub(super) fn android_virtual_mouse_on(&self) -> bool {
         self.keyboard_mouse
             && self.settings.touch.virtual_mouse
+            && !self.settings.touch.virtual_mouse_system
             && crate::keyboard_mouse_input()
             && self.focused
             && self.window.is_some()

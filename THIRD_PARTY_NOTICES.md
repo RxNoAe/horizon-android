@@ -84,3 +84,13 @@ copyright 2026 d3grando, MIT. Exact revisions and adaptation notes are recorded 
 module retains its full MIT LICENSE. Changes provide static Android hook
 adapters, opt-in configuration, profile-state reset and compatibility guards.
 These are a fixed compiled set, not support for loading arbitrary native mods.
+
+## Android pointer cursors
+
+The virtual mouse pointer sprites in `crates/horizon-client/assets/horizon/cursors/`
+are the default cursor artwork from
+[Zalith Launcher 2](https://github.com/ZalithLauncher/ZalithLauncher2), copyright
+2025-2026 MovTery and contributors, licensed under
+[GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.txt). They are cropped to the
+visible glyph and scaled to 256 px; the artwork itself is unchanged. The source
+is that project's `ZalithLauncher/src/main/res/drawable/img_mouse_pointer_*.png`.

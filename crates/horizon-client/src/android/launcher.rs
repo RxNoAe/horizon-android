@@ -291,13 +291,15 @@ impl Launcher {
         crate::configure_input_mode(self.catalog.config.input_host);
         crate::device_runtime::configure(self.catalog.config.device);
         if horizon_client::official_install::ready(&self.home) {
+            let root = self
+                .home
+                .join(".local/horizon-client")
+                .join(horizon_core::VANILLA_VERSION);
             horizon_client::android_resources::repair_structure_transforms(
                 &self.home.join("engine-data.zip"),
-                &self
-                    .home
-                    .join(".local/horizon-client")
-                    .join(horizon_core::VANILLA_VERSION),
+                &root,
             )?;
+            horizon_client::android_resources::cursors(&root)?;
             crate::platform::hide();
             self.catalog.config.save(&self.home)?;
             // Migrate the earlier launcher preset once; subsequent edits belong to Key Binds.

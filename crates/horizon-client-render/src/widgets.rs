@@ -5,14 +5,18 @@
 //! under the mouse asks for.
 use std::cell::{Cell, RefCell};
 
-/// The mouse cursor a frame's widgets asked for (`CursorTypes`; the others
-/// aren't asked for yet).
+/// The mouse cursor a frame's widgets asked for (`CursorTypes`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Cursor {
     #[default]
     Arrow,
     PointingHand,
     NotAllowed,
+    IBeam,
+    Crosshair,
+    ResizeNs,
+    ResizeEw,
+    ResizeAll,
 }
 
 thread_local! {

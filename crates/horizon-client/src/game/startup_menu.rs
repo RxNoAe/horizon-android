@@ -1273,6 +1273,20 @@ impl Loading {
                 return Ok(());
             }
             if self.menu.touch.virtual_mouse {
+                let blocked = touch.phase == TouchPhase::Started
+                    && self.settings.touch.virtual_mouse_control == 1
+                    && match self.settings.touch.virtual_mouse_block {
+                        1 => touch.location.x < f64::from(b.width) * f64::from(b.scale) / 2.0,
+                        2 => touch.location.x >= f64::from(b.width) * f64::from(b.scale) / 2.0,
+                        _ => false,
+                    };
+                if blocked {
+                    return Ok(());
+                }
+                self.menu.touch.follow_pointer =
+                    self.settings.touch.virtual_mouse_control == 1;
+                self.menu.touch.long_press_ms =
+                    self.settings.touch.virtual_mouse_long_press.round() as u64;
                 let cursor = self.menu.touch.relative_touch(
                     touch.id,
                     p,
@@ -1280,7 +1294,7 @@ impl Loading {
                     [self.menu.cursor.0, self.menu.cursor.1],
                     [b.width, b.height],
                     self.settings.touch.virtual_mouse_sensitivity,
-                    !self.menu.touch.mouse_held(),
+                    self.settings.touch.virtual_mouse_click && !self.menu.touch.mouse_held(),
                 );
                 self.menu_event(
                     event_loop,
@@ -1295,7 +1309,7 @@ impl Loading {
                 if let Some(right) = self
                     .menu
                     .touch
-                    .relative_click(!self.menu.touch.mouse_held())
+                    .relative_click(self.settings.touch.virtual_mouse_click)
                 {
                     self.startup_mouse_button(event_loop, right, true)?;
                     self.startup_mouse_button(event_loop, right, false)?;
@@ -1695,8 +1709,21 @@ impl Loading {
         #[cfg(target_os = "android")]
         {
             self.menu.touch.draw(batch, &gui.atlas, true);
-            if self.menu.touch.virtual_mouse {
-                horizon_client::touch_ui::draw_pointer(batch, &gui.atlas, self.menu.cursor);
+            if self.menu.touch.virtual_mouse
+                && !(self.settings.touch.virtual_mouse_hide
+                    && self.settings.touch.virtual_mouse_control == 1)
+            {
+                horizon_client::touch_ui::draw_cursor(
+                    batch,
+                    &gui.atlas,
+                    horizon_client::widgets::Cursor::Arrow,
+                    self.menu.cursor,
+                    self.settings.touch.virtual_mouse_size,
+                    (
+                        self.settings.touch.virtual_mouse_hotspot[0],
+                        self.settings.touch.virtual_mouse_hotspot[1],
+                    ),
+                );
             }
         }
         self.menu

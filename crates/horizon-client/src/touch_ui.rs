@@ -13,6 +13,10 @@ use winit::{event::TouchPhase, keyboard::KeyCode};
 pub struct TouchUi {
     pub expanded: bool,
     pub virtual_mouse: bool,
+    /// CLICK mode: the finger's position is the pointer, not a relative drag.
+    pub follow_pointer: bool,
+    /// A stationary hold becomes a right click after this many ms (0 = 500).
+    pub long_press_ms: u64,
     mouse_buttons: BTreeMap<u64, bool>,
     latched_modifiers: std::collections::HashSet<KeyCode>,
     relative: Option<RelativeTouch>,
@@ -111,6 +115,54 @@ pub fn draw_pointer(batch: &mut HudBatch, atlas: &HudAtlas, cursor: (f32, f32)) 
             rgba(255, 255, 255, 255),
         );
     }
+}
+
+/// Draw Zalith Launcher 2's pointer at `cursor` (GUI pixels). `size` is the
+/// square box; `hotspot` is the arrow's tip as a fraction of its fitted
+/// sprite. Falls back to the procedural arrow when the cursor textures are
+/// not in the atlas (desktop, or before the Android resources are written).
+pub fn draw_cursor(
+    batch: &mut HudBatch,
+    atlas: &HudAtlas,
+    shape: crate::widgets::Cursor,
+    cursor: (f32, f32),
+    size: f32,
+    hotspot: (f32, f32),
+) {
+    use crate::widgets::Cursor;
+    let (name, mut hx, mut hy) = match shape {
+        Cursor::Arrow => ("gui/bedrock/cursor/arrow", hotspot.0, hotspot.1),
+        Cursor::PointingHand => ("gui/bedrock/cursor/link", 0.41, 0.0),
+        Cursor::NotAllowed => ("gui/bedrock/cursor/not_allowed", 0.5, 0.5),
+        Cursor::IBeam => ("gui/bedrock/cursor/ibeam", 0.5, 0.5),
+        Cursor::Crosshair => ("gui/bedrock/cursor/crosshair", 0.5, 0.5),
+        Cursor::ResizeNs => ("gui/bedrock/cursor/resize_ns", 0.5, 0.5),
+        Cursor::ResizeEw => ("gui/bedrock/cursor/resize_ew", 0.5, 0.5),
+        Cursor::ResizeAll => ("gui/bedrock/cursor/resize_move", 0.5, 0.5),
+    };
+    let Some(r) = atlas.sprites.get(name).copied() else {
+        draw_pointer(batch, atlas, cursor);
+        return;
+    };
+    if !size.is_finite() {
+        draw_pointer(batch, atlas, cursor);
+        return;
+    }
+    let size = size.clamp(1.0, 128.0);
+    let (iw, ih) = (r.w as f32, r.h as f32);
+    let scale = (size / iw).min(size / ih);
+    let (w, h) = (iw * scale, ih * scale);
+    hx = if hx.is_finite() { hx.clamp(0.0, 1.0) } else { 0.0 };
+    hy = if hy.is_finite() { hy.clamp(0.0, 1.0) } else { 0.0 };
+    batch.sprite_scaled(
+        atlas,
+        name,
+        cursor.0 - w * hx,
+        cursor.1 - h * hy,
+        w,
+        h,
+        u32::MAX,
+    );
 }
 
 impl TouchUi {
@@ -224,14 +276,25 @@ impl TouchUi {
             return cursor;
         };
         touch.dragged |= (point[0] - touch.origin[0]).hypot(point[1] - touch.origin[1]) > 3.0;
+        let follow = self.follow_pointer;
+        let long_press = if self.long_press_ms == 0 {
+            500
+        } else {
+            self.long_press_ms
+        };
         let position = [0, 1].map(|i| {
-            (cursor[i] + (point[i] - touch.last[i]) * sensitivity)
-                .clamp(0.0, (size[i] - 1.0).max(0.0))
+            if follow {
+                point[i].clamp(0.0, (size[i] - 1.0).max(0.0))
+            } else {
+                (cursor[i] + (point[i] - touch.last[i]) * sensitivity)
+                    .clamp(0.0, (size[i] - 1.0).max(0.0))
+            }
         });
         touch.last = point;
         if phase == TouchPhase::Ended {
             if clicks && !touch.dragged && !touch.right_sent {
-                self.relative_click = Some(touch.since.elapsed() >= Duration::from_millis(500));
+                self.relative_click =
+                    Some(touch.since.elapsed() >= Duration::from_millis(long_press));
             }
             self.relative = None;
         }
@@ -247,9 +310,14 @@ impl TouchUi {
             return Some(right);
         }
         let touch = self.relative.as_mut()?;
+        let long_press = if self.long_press_ms == 0 {
+            500
+        } else {
+            self.long_press_ms
+        };
         if !touch.dragged
             && !touch.right_sent
-            && touch.since.elapsed() >= Duration::from_millis(500)
+            && touch.since.elapsed() >= Duration::from_millis(long_press)
         {
             touch.right_sent = true;
             return Some(true);

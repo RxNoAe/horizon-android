@@ -143,11 +143,15 @@ and in menus unless **Virtual mouse** is on. Touch buttons hide on hardware
 input in mouse mode and return on a touch. The system keyboard is available in
 either mode.
 
-**Virtual mouse** (Options > Controls > Touch Controls) makes the game draw its
-own pointer for a physical mouse and keeps Android's system pointer captured, so
-it cannot drift at the screen edges under display scaling. It applies in menus;
-while playing, the crosshair is the pointer. **Virtual mouse sensitivity** scales
-its movement. Turning it off restores Android's system pointer in menus.
+**Virtual mouse** (Options > Controls > Touch Controls) draws Zalith Launcher 2's
+pointer artwork instead of Android's system cursor and keeps the pointer captured,
+so it cannot drift at the screen edges under display scaling. It applies in menus;
+while playing, the crosshair is the pointer. Options: **size** (GUI pixels),
+**sensitivity**, **Use system mouse pointer** (no capture), **hide** (CLICK mode),
+**control** (SLIDE = relative drag, CLICK = the finger is the pointer), **click**
+(a tap clicks), **block half-screen touches** (off, left or right), **right-click
+hold** (milliseconds) and the arrow **hotspot** X/Y. Turning Virtual mouse off
+restores Android's system pointer.
 
 ### Physical keypad and Android TV
 

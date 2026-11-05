@@ -153,6 +153,22 @@ pub struct Settings {
     /// system pointer captured, whose absolute position drifts at the screen
     /// edges under display scaling. Off restores the system pointer in menus.
     pub virtual_mouse: bool,
+    /// Zalith-style pointer size in GUI pixels.
+    pub virtual_mouse_size: f32,
+    /// Hide the drawn pointer in CLICK mode; the finger is the pointer.
+    pub virtual_mouse_hide: bool,
+    /// Use Android's system pointer instead of capture and a drawn pointer.
+    pub virtual_mouse_system: bool,
+    /// 0 = slide (relative drag), 1 = click (the finger's position).
+    pub virtual_mouse_control: u8,
+    /// A tap clicks the virtual pointer.
+    pub virtual_mouse_click: bool,
+    /// 0 = none, 1 = block the left half, 2 = block the right half.
+    pub virtual_mouse_block: u8,
+    /// A stationary hold becomes a right click after this many milliseconds.
+    pub virtual_mouse_long_press: f32,
+    /// Arrow tip as a fraction of the fitted sprite.
+    pub virtual_mouse_hotspot: [f32; 2],
     pub crosshair_gestures: bool,
     pub attack_button_look: bool,
     pub gyroscope: bool,
@@ -244,6 +260,14 @@ impl Default for Settings {
             // the screen edges under display scaling (issue #108). The option
             // under Touch Controls turns it off.
             virtual_mouse: true,
+            virtual_mouse_size: 24.0,
+            virtual_mouse_hide: false,
+            virtual_mouse_system: false,
+            virtual_mouse_control: 0,
+            virtual_mouse_click: true,
+            virtual_mouse_block: 0,
+            virtual_mouse_long_press: 300.0,
+            virtual_mouse_hotspot: [0.0, 0.0],
             crosshair_gestures: false,
             attack_button_look: true,
             gyroscope: false,
@@ -313,6 +337,21 @@ impl Settings {
         } else {
             1.0
         };
+        self.virtual_mouse_size = if self.virtual_mouse_size.is_finite() {
+            self.virtual_mouse_size.clamp(5.0, 50.0)
+        } else {
+            24.0
+        };
+        self.virtual_mouse_control = self.virtual_mouse_control.min(1);
+        self.virtual_mouse_block = self.virtual_mouse_block.min(2);
+        self.virtual_mouse_long_press = if self.virtual_mouse_long_press.is_finite() {
+            self.virtual_mouse_long_press.clamp(100.0, 1000.0)
+        } else {
+            300.0
+        };
+        for v in &mut self.virtual_mouse_hotspot {
+            *v = if v.is_finite() { v.clamp(0.0, 1.0) } else { 0.0 };
+        }
         self.gyro_sensitivity = if self.gyro_sensitivity.is_finite() {
             self.gyro_sensitivity.clamp(0.1, 3.0)
         } else {

@@ -1496,7 +1496,24 @@ impl Game<'_> {
             self.draw_pad_focus(batch, focus);
             return;
         }
-        horizon_client::touch_ui::draw_pointer(batch, &self.gui.atlas, (x, y));
+        #[cfg(target_os = "android")]
+        if self.pad.touch_ui.virtual_mouse
+            && self.settings.touch.virtual_mouse_hide
+            && self.settings.touch.virtual_mouse_control == 1
+        {
+            return;
+        }
+        horizon_client::touch_ui::draw_cursor(
+            batch,
+            &self.gui.atlas,
+            self.cursor_icon,
+            (x, y),
+            self.settings.touch.virtual_mouse_size,
+            (
+                self.settings.touch.virtual_mouse_hotspot[0],
+                self.settings.touch.virtual_mouse_hotspot[1],
+            ),
+        );
     }
 
     /// The focus highlight, as vanilla's keyboard focus looks: buttons,

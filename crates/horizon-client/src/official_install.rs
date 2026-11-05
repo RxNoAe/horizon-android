@@ -483,6 +483,7 @@ pub fn install_with_progress(home: &Path, progress: impl Fn(InstallProgress) + S
         crate::android_resources::controls_with_progress(&stage, |done, total| {
             report(InstallStage::Controls, done, total)
         })?;
+        crate::android_resources::cursors(&stage)?;
         report(InstallStage::Finalize, 0, 0);
         fs::write(stage.join("android-downloads-v2.json"), b"{\"schema\":2}")?;
         // Android can evict cache files under storage pressure. The verified

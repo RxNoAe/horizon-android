@@ -198,6 +198,55 @@ pub fn controls_with_progress(root: &Path, progress: impl Fn(u64, u64)) -> Resul
     Ok(())
 }
 
+/// Zalith Launcher 2's cursor set (GPL-3.0): cropped and scaled to 256 px so
+/// the HUD atlas stays small. The Android pointer draws these sprites.
+const CURSORS: &[(&str, &[u8])] = &[
+    (
+        "arrow",
+        include_bytes!("../assets/horizon/cursors/arrow.png"),
+    ),
+    (
+        "ibeam",
+        include_bytes!("../assets/horizon/cursors/ibeam.png"),
+    ),
+    (
+        "crosshair",
+        include_bytes!("../assets/horizon/cursors/crosshair.png"),
+    ),
+    ("link", include_bytes!("../assets/horizon/cursors/link.png")),
+    (
+        "not_allowed",
+        include_bytes!("../assets/horizon/cursors/not_allowed.png"),
+    ),
+    (
+        "resize_ew",
+        include_bytes!("../assets/horizon/cursors/resize_ew.png"),
+    ),
+    (
+        "resize_move",
+        include_bytes!("../assets/horizon/cursors/resize_move.png"),
+    ),
+    (
+        "resize_ns",
+        include_bytes!("../assets/horizon/cursors/resize_ns.png"),
+    ),
+];
+
+/// Write the cursor sprites under `assets/minecraft/textures/gui/bedrock/cursor`
+/// so the HUD atlas packs them as `gui/bedrock/cursor/<name>`.
+pub fn cursors(root: &Path) -> Result<()> {
+    let target = root.join("assets/minecraft/textures/gui/bedrock/cursor");
+    for (name, bytes) in CURSORS {
+        let file = target.join(format!("{name}.png"));
+        if fs::read(&file).is_ok_and(|data| data == *bytes) {
+            continue;
+        }
+        fs::create_dir_all(&target)?;
+        fs::write(&file, bytes)?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

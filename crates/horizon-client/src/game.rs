@@ -7755,6 +7755,11 @@ impl Game<'_> {
                 Cursor::Arrow => winit::window::CursorIcon::Default,
                 Cursor::PointingHand => winit::window::CursorIcon::Pointer,
                 Cursor::NotAllowed => winit::window::CursorIcon::NotAllowed,
+                Cursor::IBeam => winit::window::CursorIcon::Text,
+                Cursor::Crosshair => winit::window::CursorIcon::Crosshair,
+                Cursor::ResizeNs => winit::window::CursorIcon::NsResize,
+                Cursor::ResizeEw => winit::window::CursorIcon::EwResize,
+                Cursor::ResizeAll => winit::window::CursorIcon::Move,
             });
         }
         self.cursor_icon = effective;
