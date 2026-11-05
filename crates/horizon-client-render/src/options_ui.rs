@@ -195,6 +195,7 @@ impl Opt {
             Opt::TouchCrosshairGestures => "Touch gestures",
             Opt::TouchAttackButtonLook => "Look while attacking",
             Opt::TouchMouseSensitivity => "Virtual mouse sensitivity",
+            Opt::TouchVirtualMouse => "Virtual mouse (keyboard & mouse)",
             Opt::TouchAnalog => "360-degree movement",
             Opt::TouchCircleSize => "Touch circle size",
             Opt::TouchAttackSide => "Attack indicator side",
@@ -557,6 +558,9 @@ impl Opt {
             ),
             Opt::TouchMouseSensitivity => {
                 Some(format!("{:.0}%", s.touch.virtual_mouse_sensitivity * 100.0))
+            }
+            Opt::TouchVirtualMouse => {
+                Some(if s.touch.virtual_mouse { "ON" } else { "OFF" }.into())
             }
             Opt::TouchAttackButtonLook => Some(
                 if s.touch.attack_button_look {
@@ -1124,6 +1128,7 @@ impl Opt {
             Opt::TouchSprintButton => s.touch.sprint_button ^= true,
             Opt::TouchSprintToggle => s.touch.sprint_toggle ^= true,
             Opt::TouchInventoryControls => s.touch.inventory_controls ^= true,
+            Opt::TouchVirtualMouse => s.touch.virtual_mouse ^= true,
             Opt::TouchDynamicJoystick => s.touch.dynamic_joystick ^= true,
             Opt::TouchCrosshairGestures => s.touch.crosshair_gestures ^= true,
             Opt::TouchAttackButtonLook => s.touch.attack_button_look ^= true,
@@ -2788,6 +2793,7 @@ impl OptionsUi {
                     Opt::TouchSprintToggle,
                     Opt::TouchInventoryControls,
                     Opt::TouchInteract,
+                    Opt::TouchVirtualMouse,
                     Opt::TouchMouseSensitivity,
                     Opt::TouchDynamicJoystick,
                     Opt::TouchDynamicAreaX,

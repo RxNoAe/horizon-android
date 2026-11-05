@@ -829,6 +829,7 @@ pub enum Opt {
     TouchSprintToggle,
     TouchInventoryControls,
     TouchMouseSensitivity,
+    TouchVirtualMouse,
     TouchCrosshairGestures,
     TouchAttackButtonLook,
     TouchDynamicJoystick,

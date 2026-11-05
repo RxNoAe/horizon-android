@@ -149,6 +149,10 @@ pub struct Settings {
     pub sprint_toggle: bool,
     pub inventory_controls: bool,
     pub virtual_mouse_sensitivity: f32,
+    /// Draw the game's own pointer for a physical mouse and keep Android's
+    /// system pointer captured, whose absolute position drifts at the screen
+    /// edges under display scaling. Off restores the system pointer in menus.
+    pub virtual_mouse: bool,
     pub crosshair_gestures: bool,
     pub attack_button_look: bool,
     pub gyroscope: bool,
@@ -236,6 +240,10 @@ impl Default for Settings {
             sprint_toggle: false,
             inventory_controls: false,
             virtual_mouse_sensitivity: 1.0,
+            // On by default on the Android fork: the system pointer drifts at
+            // the screen edges under display scaling (issue #108). The option
+            // under Touch Controls turns it off.
+            virtual_mouse: true,
             crosshair_gestures: false,
             attack_button_look: true,
             gyroscope: false,

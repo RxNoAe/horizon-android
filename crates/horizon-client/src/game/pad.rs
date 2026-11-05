@@ -205,6 +205,7 @@ impl Game<'_> {
                 self.pad.touch.inventory_shift = false;
             }
             self.android_virtual_mouse_clicks(event_loop);
+            self.android_sync_virtual_mouse();
             let active = horizon_client::android_runtime::active_input();
             if self.pad.last_input_mode.replace(active).is_some_and(|old| {
                 old == horizon_client::android_gamepad::InputMode::KeyboardMouse && old != active

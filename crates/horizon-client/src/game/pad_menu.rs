@@ -1478,7 +1478,7 @@ impl Game<'_> {
             return;
         }
         #[cfg(target_os = "android")]
-        let virtual_mouse = self.pad.touch_ui.virtual_mouse;
+        let virtual_mouse = self.pad.touch_ui.virtual_mouse || self.android_virtual_mouse_on();
         #[cfg(not(target_os = "android"))]
         let virtual_mouse = false;
         let pointer = if virtual_mouse {

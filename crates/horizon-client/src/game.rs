@@ -2212,6 +2212,10 @@ struct Game<'a> {
     /// The cursor icon the window shows (`widgets::take_cursor` each frame).
     cursor_icon: horizon_client::widgets::Cursor,
     captured: bool,
+    /// The Android system pointer is captured so the game can draw its own
+    /// virtual mouse in menus (`android_sync_virtual_mouse`).
+    #[cfg(target_os = "android")]
+    android_pointer_captured: bool,
     /// Only the local player owning keyboard and mouse changes the native pointer.
     keyboard_mouse: bool,
     /// This view's corner in its shared window; cursor warps include the offset.
@@ -7629,7 +7633,10 @@ impl Game<'_> {
         if !capture {
             self.stop_mining();
             #[cfg(target_os = "android")]
-            crate::platform::capture_mouse(false);
+            if !self.android_virtual_mouse_on() {
+                crate::platform::capture_mouse(false);
+                self.android_pointer_captured = false;
+            }
         }
         // The real pointer takes over from an agent's.
         self.agent_pointer = false;
@@ -7680,8 +7687,10 @@ impl Game<'_> {
                 .is_ok();
             #[cfg(target_os = "android")]
             {
-                self.captured =
-                    !crate::keyboard_mouse_input() || crate::platform::capture_mouse(true);
+                let requested = crate::keyboard_mouse_input()
+                    && crate::platform::capture_mouse(true);
+                self.android_pointer_captured |= requested;
+                self.captured = !crate::keyboard_mouse_input() || requested;
             }
             #[cfg(not(target_os = "macos"))]
             if self.captured && self.focused {
@@ -16022,7 +16031,12 @@ impl ApplicationHandler for Game<'_> {
     fn window_event(&mut self, event_loop: &ActiveEventLoop, id: WindowId, event: WindowEvent) {
         self.handle_window_event(event_loop, id, event);
     }
-    fn device_event(&mut self, _: &ActiveEventLoop, device: DeviceId, event: DeviceEvent) {
+    fn device_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        device: DeviceId,
+        event: DeviceEvent,
+    ) {
         #[cfg(target_os = "android")]
         if self.focused
             && self.settings.controller.enabled
@@ -16034,7 +16048,26 @@ impl ApplicationHandler for Game<'_> {
             return;
         }
         #[cfg(not(target_os = "android"))]
-        let _ = device;
+        let _ = (device, event_loop);
+        // A physical mouse in a menu: the system pointer stays captured (so it
+        // cannot drift at the screen edges under display scaling) and the game
+        // moves and draws its own pointer from these relative deltas.
+        #[cfg(target_os = "android")]
+        if let DeviceEvent::MouseMotion { delta: (x, y) } = &event
+            && self.focused
+            && !self.options.offscreen
+            && self.pad_in_menu()
+            && self.android_virtual_mouse_on()
+        {
+            if !horizon_client::android_runtime::note_input(
+                horizon_client::android_gamepad::InputMode::KeyboardMouse,
+            ) {
+                return;
+            }
+            self.android_virtual_mouse_motion(event_loop, *x, *y);
+            self.last_input = Instant::now();
+            return;
+        }
         // Offscreen games never consume physical pointer motion.
         if self.pending_save.is_none()
             && self.captured
@@ -16798,6 +16831,12 @@ impl Game<'_> {
                 WindowEvent::Focused(focused) => {
                     self.focused = focused;
                     self.focus_lost = (!focused).then(Instant::now);
+                    #[cfg(target_os = "android")]
+                    if !focused {
+                        // The system drops pointer capture with window focus.
+                        self.android_pointer_captured = false;
+                        crate::platform::capture_mouse(false);
+                    }
                     if !focused && self.control.is_none() {
                         self.keys.clear();
                         // Latched sneak/sprint live in `toggles`, not in the
@@ -16824,6 +16863,8 @@ impl Game<'_> {
                         self.right = false;
                         self.capture(false);
                     }
+                    #[cfg(target_os = "android")]
+                    self.android_sync_virtual_mouse();
                 }
                 WindowEvent::CursorMoved { position, .. } => {
                     if let Some(r) = &self.renderer {
@@ -18045,6 +18086,8 @@ impl<'a> Game<'a> {
             cursor: (0.0, 0.0),
             cursor_icon: horizon_client::widgets::Cursor::Arrow,
             captured: false,
+            #[cfg(target_os = "android")]
+            android_pointer_captured: false,
             keyboard_mouse: true,
             view_at: [0, 0],
             split_hud: Default::default(),

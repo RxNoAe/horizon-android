@@ -755,4 +755,65 @@ impl Game<'_> {
             }
         }
     }
+
+    /// A physical mouse is in use and the game should draw its own pointer:
+    /// keyboard/mouse input is active, the window is focused, and the option
+    /// under Touch Controls is on.
+    pub(super) fn android_virtual_mouse_on(&self) -> bool {
+        self.keyboard_mouse
+            && self.settings.touch.virtual_mouse
+            && crate::keyboard_mouse_input()
+            && self.focused
+            && self.window.is_some()
+            && self.renderer.is_some()
+            && !self.touch_editing()
+            && !crate::platform::active()
+    }
+
+    /// Keep Android's pointer captured while the virtual mouse is on, so the
+    /// system cursor (the one that drifts at the screen edges) never draws.
+    /// Capture also stays on for gameplay, where it already gave relative look.
+    pub(super) fn android_sync_virtual_mouse(&mut self) {
+        let want = (self.keyboard_mouse && self.captured && crate::keyboard_mouse_input())
+            || (self.android_virtual_mouse_on() && self.pending_save.is_none());
+        if want == self.android_pointer_captured {
+            return;
+        }
+        if crate::platform::capture_mouse(want) {
+            self.android_pointer_captured = want;
+        }
+    }
+
+    /// Move the game's pointer by a physical mouse delta, in GUI pixels, and
+    /// run the normal `CursorMoved` path so hover, drags and tooltips follow.
+    pub(super) fn android_virtual_mouse_motion(
+        &mut self,
+        events: &dyn super::event_loop::EventLoopCtl,
+        dx: f64,
+        dy: f64,
+    ) {
+        if !dx.is_finite() || !dy.is_finite() {
+            return;
+        }
+        let Some(b) = self.gui_scale() else {
+            return;
+        };
+        let Some(id) = self.window.as_ref().map(|w| w.id()) else {
+            return;
+        };
+        let sensitivity = f64::from(self.settings.touch.virtual_mouse_sensitivity);
+        let scale = f64::from(b.scale);
+        let x = (f64::from(self.cursor.0) + dx * sensitivity / scale)
+            .clamp(0.0, f64::from(b.width - 1.0).max(0.0));
+        let y = (f64::from(self.cursor.1) + dy * sensitivity / scale)
+            .clamp(0.0, f64::from(b.height - 1.0).max(0.0));
+        self.handle_window_event(
+            events,
+            id,
+            WindowEvent::CursorMoved {
+                device_id: DeviceId::dummy(),
+                position: winit::dpi::PhysicalPosition::new(x * scale, y * scale),
+            },
+        );
+    }
 }

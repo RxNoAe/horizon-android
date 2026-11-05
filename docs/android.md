@@ -138,9 +138,16 @@ through Rust/JNI on the UI thread. There are no project Java/Kotlin classes and
 no second copy of the engine in the APK.
 
 Mouse cursor, buttons, wheel and modifiers use the normal desktop input path.
-Pointer capture provides relative camera movement and releases in menus or on
-focus loss. Touch buttons hide on hardware input in mouse mode and return on a
-touch. The system keyboard is available in either mode.
+Pointer capture provides relative camera movement and releases on focus loss,
+and in menus unless **Virtual mouse** is on. Touch buttons hide on hardware
+input in mouse mode and return on a touch. The system keyboard is available in
+either mode.
+
+**Virtual mouse** (Options > Controls > Touch Controls) makes the game draw its
+own pointer for a physical mouse and keeps Android's system pointer captured, so
+it cannot drift at the screen edges under display scaling. It applies in menus;
+while playing, the crosshair is the pointer. **Virtual mouse sensitivity** scales
+its movement. Turning it off restores Android's system pointer in menus.
 
 ### Physical keypad and Android TV
 
